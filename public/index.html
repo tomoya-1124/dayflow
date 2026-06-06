@@ -14,7 +14,30 @@
     .done { color: #888; text-decoration: line-through; }
     button { cursor: pointer; }
     input[type="text"] { width: 70%; padding: 6px; }
-  </style>
+    .todo-content {
+        flex: 1;
+      }
+
+      .todo-meta {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 4px;
+      }
+
+      .progress-wrap {
+        width: 120px;
+        height: 8px;
+        background: #eee;
+        border-radius: 999px;
+        overflow: hidden;
+        margin-top: 4px;
+      }
+
+      .progress-bar {
+        height: 100%;
+        background: #333;
+      }
+  </style>    
 </head>
 <body>
   <h1>ToDo（勉強会用）</h1>
@@ -28,10 +51,25 @@
 
   <ul data-bind="foreach: todos">
     <li>
-      <!-- 完了チェック -->
       <input type="checkbox" data-bind="checked: done, click: $parent.toggleDone" />
-      <!-- タイトル（doneなら取り消し線） -->
-      <span class="title" data-bind="text: title, css: { done: done }"></span>
+
+      <div class="todo-content">
+        <span class="title" data-bind="text: title, css: { done: done }"></span>
+
+        <div class="todo-meta">
+          <span>優先度：</span>
+          <span data-bind="text: priority"></span>
+          <span> / 進捗：</span>
+          <span data-bind="text: progress + '%'"></span>
+          <span> / 期限：</span>
+          <span data-bind="text: due_date || '未設定'"></span>
+
+          <div class="progress-wrap">
+            <div class="progress-bar" data-bind="style: { width: progress + '%' }"></div>
+          </div>
+        </div>
+      </div>
+
       <button data-bind="click: $parent.removeTodo">削除</button>
     </li>
   </ul>
@@ -47,7 +85,15 @@
         const res = await fetch('/api/todos');
         const data = await res.json();
         // doneはBooleanとして扱う
-        const mapped = data.map(x => ({ id: x.id, title: x.title, done: ko.observable(!!x.done) }));
+        const mapped = data.map(x => ({
+          id: x.id,
+          title: x.title,
+          description: x.description || '',
+          priority: x.priority || 'medium',
+          progress: x.progress ?? 0,
+          due_date: x.due_date,
+          done: ko.observable(!!x.done)
+        }));
         self.todos(mapped);
       };
 
@@ -61,7 +107,7 @@
           body: JSON.stringify({ title })
         });
         const created = await res.json();
-        self.todos.unshift({ id: created.id, title: created.title, done: ko.observable(false) });
+        self.todos.unshift({ id: created.id, title: created.title, description: created.description || '', priority: created.priority || 'medium', progress: created.progress ?? 0, due_date: created.due_date, done: ko.observable(false) });
         self.newTitle('');
       };
 
