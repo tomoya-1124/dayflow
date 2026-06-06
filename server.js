@@ -63,9 +63,21 @@ app.get('/api/todos', (req, res) => {
 app.post('/api/todos', (req, res) => {
   const { title } = req.body;
   if (!title || !title.trim()) return res.status(400).json({ message: 'titleは必須です' });
-  db.run('INSERT INTO todos (title, done) VALUES (?, 0)', [title.trim()], function (err) {
+  db.run(
+  `INSERT INTO todos (title, done, description, priority, progress, due_date)
+   VALUES (?, 0, '', 'medium', 0, NULL)`,
+  [title.trim()],
+  function (err) {
     if (err) return res.status(500).json({ message: 'DB error', detail: String(err) });
-    res.status(201).json({ id: this.lastID, title: title.trim(), done: false });
+    res.status(201).json({
+      id: this.lastID,
+      title: title.trim(),
+      done: false,
+      description: '',
+      priority: 'medium',
+      progress: 0,
+      due_date: null
+    });
   });
 });
 
