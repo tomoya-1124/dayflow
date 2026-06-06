@@ -18,12 +18,41 @@ db.serialize(() => {
       title TEXT NOT NULL,
       done INTEGER NOT NULL DEFAULT 0
     )
+    
   `);
 });
+const addColumnIfNotExists = (tableName, columnName, columnDefinition) => {
+  db.all(`PRAGMA table_info(${tableName})`, (err, columns) => {
+    if (err) {
+      console.error(`Failed to check columns for ${tableName}:`, err);
+      return;
+    }
+
+    const exists = columns.some((column) => column.name === columnName);
+
+    if (!exists) {
+      db.run(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition}`, (alterErr) => {
+        if (alterErr) {
+          console.error(`Failed to add column ${columnName}:`, alterErr);
+          return;
+        }
+
+        console.log(`Added column: ${columnName}`);
+      });
+    }
+  });
+};
+
+addColumnIfNotExists('todos', 'description', 'TEXT');
+addColumnIfNotExists('todos', 'priority', "TEXT NOT NULL DEFAULT 'medium'");
+addColumnIfNotExists('todos', 'progress', 'INTEGER NOT NULL DEFAULT 0');
+addColumnIfNotExists('todos', 'due_date', 'TEXT');
 
 // GET: 全件取得
 app.get('/api/todos', (req, res) => {
-  db.all('SELECT id, title, done FROM todos ORDER BY id DESC', (err, rows) => {
+  db.all(
+  'SELECT id, title, done, description, priority, progress, due_date FROM todos ORDER BY id DESC',
+  (err, rows) => {
     if (err) return res.status(500).json({ message: 'DB error', detail: String(err) });
     // doneは数値(0/1)で返るのでフロントでBooleanにしてもOK
     res.json(rows.map(r => ({ ...r, done: !!r.done })));
