@@ -61,22 +61,22 @@ app.get('/api/todos', (req, res) => {
 
 // POST: 追加
 app.post('/api/todos', (req, res) => {
-  const { title } = req.body;
+  const { title, description, priority, due_date } = req.body;
   if (!title || !title.trim()) return res.status(400).json({ message: 'titleは必須です' });
   db.run(
   `INSERT INTO todos (title, done, description, priority, progress, due_date)
-   VALUES (?, 0, '', 'medium', 0, NULL)`,
-  [title.trim()],
+   VALUES (?, 0, ?, ?, 0, ?)`,
+  [title.trim(), description || '', priority || 'medium', due_date || null],
   function (err) {
     if (err) return res.status(500).json({ message: 'DB error', detail: String(err) });
     res.status(201).json({
       id: this.lastID,
       title: title.trim(),
       done: false,
-      description: '',
-      priority: 'medium',
+      description: description || '',
+      priority: priority || 'medium',
       progress: 0,
-      due_date: null
+      due_date: due_date || null
     });
   });
 });

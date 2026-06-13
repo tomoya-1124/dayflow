@@ -17,7 +17,12 @@
     .todo-content {
         flex: 1;
       }
-
+      .todo-description {
+        font-size: 0.85rem;
+        color: #444;
+        margin-top: 4px;
+      }
+      
       .todo-meta {
         font-size: 0.8rem;
         color: #666;
@@ -44,6 +49,17 @@
 
   <form data-bind="submit: addTodo">
     <input type="text" placeholder="やること..." data-bind="value: newTitle" />
+
+    <input type="text" placeholder="説明メモ" data-bind="value: newDescription" />
+
+    <select data-bind="value: newPriority">
+      <option value="low">低</option>
+      <option value="medium">中</option>
+      <option value="high">高</option>
+    </select>
+
+    <input type="date" data-bind="value: newDueDate" />
+
     <button type="submit">追加</button>
   </form>
 
@@ -55,6 +71,8 @@
 
       <div class="todo-content">
         <span class="title" data-bind="text: title, css: { done: done }"></span>
+
+        <div class="todo-description" data-bind="visible: description, text: description"></div>
 
         <div class="todo-meta">
           <span>優先度：</span>
@@ -79,6 +97,9 @@
       const self = this;
       self.todos = ko.observableArray([]);
       self.newTitle = ko.observable('');
+      self.newDescription = ko.observable('');
+      self.newPriority = ko.observable('medium');
+      self.newDueDate = ko.observable('');
 
       // 初期読込
       self.load = async function () {
@@ -104,11 +125,19 @@
         const res = await fetch('/api/todos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title })
+          body: JSON.stringify({
+            title,
+            description: self.newDescription(),
+            priority: self.newPriority(),
+            due_date: self.newDueDate() || null
+          })
         });
         const created = await res.json();
         self.todos.unshift({ id: created.id, title: created.title, description: created.description || '', priority: created.priority || 'medium', progress: created.progress ?? 0, due_date: created.due_date, done: ko.observable(false) });
         self.newTitle('');
+        self.newDescription('');
+        self.newPriority('medium');
+        self.newDueDate('');
       };
 
       // 完了トグル
