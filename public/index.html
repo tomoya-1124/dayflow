@@ -22,7 +22,7 @@
         color: #444;
         margin-top: 4px;
       }
-      
+
       .todo-meta {
         font-size: 0.8rem;
         color: #666;
@@ -78,13 +78,21 @@
           <span>優先度：</span>
           <span data-bind="text: priority"></span>
           <span> / 進捗：</span>
-          <span data-bind="text: progress + '%'"></span>
+          <span data-bind="text: progress() + '%'"></span>
           <span> / 期限：</span>
           <span data-bind="text: due_date || '未設定'"></span>
 
           <div class="progress-wrap">
-            <div class="progress-bar" data-bind="style: { width: progress + '%' }"></div>
+            <div class="progress-bar" data-bind="style: { width: progress() + '%' }"></div>
           </div>
+
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            data-bind="value: progress, event: { change: $parent.updateProgress }"
+          />
         </div>
       </div>
 
@@ -111,7 +119,7 @@
           title: x.title,
           description: x.description || '',
           priority: x.priority || 'medium',
-          progress: x.progress ?? 0,
+          progress: ko.observable(x.progress ?? 0),
           due_date: x.due_date,
           done: ko.observable(!!x.done)
         }));
@@ -133,7 +141,7 @@
           })
         });
         const created = await res.json();
-        self.todos.unshift({ id: created.id, title: created.title, description: created.description || '', priority: created.priority || 'medium', progress: created.progress ?? 0, due_date: created.due_date, done: ko.observable(false) });
+        self.todos.unshift({ id: created.id, title: created.title, description: created.description || '', priority: created.priority || 'medium', progress: ko.observable(created.progress ?? 0), due_date: created.due_date, done: ko.observable(false) });
         self.newTitle('');
         self.newDescription('');
         self.newPriority('medium');
@@ -150,6 +158,22 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ done: now })
         });
+      };
+
+      // 進捗更新
+      self.updateProgress = async function (todo) {
+        const progress = Number(todo.progress());
+
+        const res = await fetch('/api/todos/' + todo.id + '/progress', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ progress })
+        });
+
+        const updated = await res.json();
+
+        todo.progress(updated.progress);
+        todo.done(updated.done);
       };
 
       // 削除

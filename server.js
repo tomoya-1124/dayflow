@@ -94,6 +94,32 @@ app.patch('/api/todos/:id/done', (req, res) => {
   });
 });
 
+// PATCH: 進捗率を更新
+app.patch('/api/todos/:id/progress', (req, res) => {
+  const id = Number(req.params.id);
+  const { progress } = req.body;
+
+  if (Number.isNaN(id) || typeof progress !== 'number' || progress < 0 || progress > 100) {
+    return res.status(400).json({ message: 'invalid request' });
+  }
+
+  const done = progress === 100 ? 1 : 0;
+
+  db.run(
+    'UPDATE todos SET progress = ?, done = ? WHERE id = ?',
+    [progress, done, id],
+    function (err) {
+      if (err) return res.status(500).json({ message: 'DB error', detail: String(err) });
+
+      res.status(200).json({
+        id,
+        progress,
+        done: !!done
+      });
+    }
+  );
+});
+
 // DELETE: 削除
 app.delete('/api/todos/:id', (req, res) => {
   const id = Number(req.params.id);
